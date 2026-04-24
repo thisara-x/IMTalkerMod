@@ -585,7 +585,7 @@ def pipeline_handler(text,progress=gr.Progress()):
 
 demo = gr.Interface(
     fn=pipeline_handler,
-    inputs=[gr.TextBox(label="Enter The voice Text")],
+    inputs=[gr.Textbox(label="Enter The voice Text")],
     output=gr.Video(label="Animated Headshot")
 
 )
