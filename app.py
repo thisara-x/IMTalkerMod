@@ -10,6 +10,7 @@ import librosa
 import face_alignment
 import gradio as gr
 from PIL import Image
+import io, tempfile
 import torchvision.transforms as transforms
 from transformers import Wav2Vec2FeatureExtractor
 from tqdm import tqdm
@@ -501,12 +502,27 @@ except Exception as e:
 def fn_audio_driven(image, audio, crop, seed, nfe, cfg_scale, progress=gr.Progress()):
     if agent is None: raise gr.Error("Models not loaded properly. Check logs.")
     if image is None or audio is None: raise gr.Error("Missing image or audio.")
-    
+
+
+    # ---------- handle image ----------
+    if isinstance(image, str):
+        img_pil = Image.open(image).convert('RGB')
+    else:
+        img_pil = Image.fromarray(image).convert('RGB')
+
+
+    if isinstance(audio, str):
+        # Gradio returned a file path directly
+        audio_path = audio
+    else:
+        raise ValueError(f"Unexpected audio type: {type(audio)}")
+
+
     # 动态移动模型到 GPU
     if torch.cuda.is_available():
         agent.to("cuda")
         
-    img_pil = Image.fromarray(image).convert('RGB')
+
     try:
         return agent.run_audio_inference(img_pil, audio, crop, int(seed), int(nfe), float(cfg_scale))
     except Exception as e:
@@ -532,7 +548,7 @@ def fn_video_driven(source_image, driving_video, crop, progress=gr.Progress()):
 
 
 #clone the audio 
-def clone_audio(text,progress):
+def clone_audio(text):
     ref_audio = "audios/clone.wav"
     ref_text  = "If the user wants to check their balance, they go directly to their locker. If they want to deposit or withdraw money, they do not need to search again because they already know where their locker is. This is the key difference."
     cloned_audio_path = smart_generate_clone(ref_audio,
@@ -544,15 +560,13 @@ def clone_audio(text,progress):
     False,
     False)
 
-    del model
-    del wavs
 
     gc.collect()
     torch.cuda.empty_cache()
-    return cloned_audio_path
+    return cloned_audio_path[0]
 
 #voice replacing 
-def voice_replacing(video_path, audio_path, progress):
+def voice_replacing(video_path, audio_path):
     video = VideoFileClip(video_path)
     audio = AudioFileClip(audio_path)
 
@@ -562,31 +576,31 @@ def voice_replacing(video_path, audio_path, progress):
     return video_path
 
 #pipeline handler
-def pipeline_handler(text,progress=gr.Progress()):
-    progress.Info("Audio generation is started!")
-    audio_path = clone_audio(text=text,progress=progress)
-    progress.Info("Audio generation successfully ended!")
-    progress.Info*("Headhot video generation start!")
+def pipeline_handler(text):
+    gr.Info("Audio generation started!")
+    audio_path = clone_audio(text=text)
+    gr.Info("Audio generation successfully ended!")
+    gr.Info("Headhot video generation start!")
     
     #PARAMERTERS
     avatat_image = "images/avatar.png"
-    a_crop = False
+    a_crop = True
     a_seed = 42
     a_nfe = 10
     a_cfg = 2.0    
     
     
-    video_path = fn_audio_driven(image=avatat_image,audio=audio_path,cfg_scale=a_cfg,crop=a_crop,nfe=a_nfe,seed=a_seed,progress=progress)
-    progress.Info("Headshot video generation is successfully ended!")
-    progress.Info("Voice Replacing is  started")
-    video_path = voice_replacing(video_path=video_path,audio_path=audio_path,progress=progress)
-    progress.Info("Voice replacing successfully ended!")
+    video_path = fn_audio_driven(image=avatat_image,audio=audio_path,cfg_scale=a_cfg,crop=a_crop,nfe=a_nfe,seed=a_seed)
+    gr.Info("Headshot video generation is successfully ended!")
+    gr.Info("Voice Replacing is  started")
+    video_path = voice_replacing(video_path=video_path,audio_path=audio_path)
+    gr.Info("Voice replacing successfully ended!")
     return video_path
 
 demo = gr.Interface(
     fn=pipeline_handler,
     inputs=[gr.Textbox(label="Enter The voice Text")],
-    output=gr.Video(label="Animated Headshot")
+    outputs=gr.Video(label="Animated Headshot")
 
 )
 '''
