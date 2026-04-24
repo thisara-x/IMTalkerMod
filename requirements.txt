@@ -16,3 +16,8 @@ av==12.0.0
 spaces
 moviepy
 pydub
+qwen-tts
+pysrt
+sentencex
+faster-whisper==1.1.1
+ctranslate2==4.6.0

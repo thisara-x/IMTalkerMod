@@ -24,6 +24,7 @@ import torch
 import soundfile as sf
 from qwen_tts import Qwen3TTSModel
 import gc
+from audio_app import smart_generate_clone
 
 # 引入 spaces，用于 ZeroGPU 支持
 import spaces
@@ -532,30 +533,17 @@ def fn_video_driven(source_image, driving_video, crop, progress=gr.Progress()):
 
 #clone the audio 
 def clone_audio(text,progress):
-    try:
-        model = Qwen3TTSModel.from_pretrained(
-        "Qwen/Qwen3-TTS-12Hz-1.7B-Base",
-        device_map="cuda:0",
-        dtype=torch.bfloat16,
-        attn_implementation="flash_attention_2",
-    )   
-        progress.Info("Qwen Model loading successfully")
-    except:
-        progress.Info("Qwen Model loading failes!")
-        raise "Model loading faliled"
-    
-
     ref_audio = "audios/clone.wav"
     ref_text  = "If the user wants to check their balance, they go directly to their locker. If they want to deposit or withdraw money, they do not need to search again because they already know where their locker is. This is the key difference."
-    
-    wavs, sr = model.generate_voice_clone(
-        text=text,
-        language="English",
-        ref_audio=ref_audio,
-        ref_text=ref_text,
-    )
-    cloned_audio_path = "audios/output_voice_clone.wav"
-    sf.write(cloned_audio_path, wavs[0], sr)
+    cloned_audio_path = smart_generate_clone(ref_audio,
+    ref_text,
+    text,
+    "Auto",
+    "High-Quality (Audio + Transcript)",
+    "1.7B",
+    False,
+    False)
+
     del model
     del wavs
 
