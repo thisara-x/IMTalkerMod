@@ -592,9 +592,9 @@ def pipeline_handler(text):
     
     video_path = fn_audio_driven(image=avatat_image,audio=audio_path,cfg_scale=a_cfg,crop=a_crop,nfe=a_nfe,seed=a_seed)
     gr.Info("Headshot video generation is successfully ended!")
-    gr.Info("Voice Replacing is  started")
-    video_path = voice_replacing(video_path=video_path,audio_path=audio_path)
-    gr.Info("Voice replacing successfully ended!")
+    #gr.Info("Voice Replacing is  started")
+    #video_path = voice_replacing(video_path=video_path,audio_path=audio_path)
+    #gr.Info("Voice replacing successfully ended!")
     return video_path
 
 demo = gr.Interface(
